@@ -2,7 +2,7 @@
 requests==2.32.3
 APScheduler==3.10.4
 elasticsearch==7.17.9
-SQLAlchemy==1.4.52
+SQLAlchemy==2.0.31
 PYESHandler==1.0.2
 
 
