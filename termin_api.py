@@ -6,6 +6,7 @@ import requests
 
 import captcha
 
+
 class Meta(type):
     def __repr__(cls):
         return cls.get_name()
@@ -265,11 +266,39 @@ class KVR(Buro):
 class ForeignLabor(Buro):
     @staticmethod
     def get_name():
-        return '❌ Ausländerbehörde'
+        return '± Ausländerbehörde'
+
+    @staticmethod
+    def _get_base_page():
+        return 'https://www.muenchen.de/rathaus/terminvereinbarung_abh.html'
+
+    @staticmethod
+    def get_frame_url():
+        return 'https://terminvereinbarung.muenchen.de/abh/termin/'
 
     @staticmethod
     def get_info_message():
-        return '❌ Please note Ausländerbehörde does not have online Termin bookings any more\. You need to file application online for [Blue Card](https://stadt.muenchen.de/service/info/hauptabteilung-ii-buergerangelegenheiten/1080627/) or for [Niederlassungserlaubnis](https://stadt.muenchen.de/service/info/hauptabteilung-ii-buergerangelegenheiten/1080810/)'
+        return '± Please note Ausländerbehörde does not have online Termin bookings FOR PERMITS any more\. You need to file application online for [Blue Card](https://stadt.muenchen.de/service/info/hauptabteilung-ii-buergerangelegenheiten/1080627/) or for [Niederlassungserlaubnis](https://stadt.muenchen.de/service/info/hauptabteilung-ii-buergerangelegenheiten/1080810/)\. However, for Verpflichtungserklärung it is still working'
+
+    @staticmethod
+    def get_typical_appointments() -> list:
+        try:
+            res = []
+            # Initial registration and address change
+            for i, termin in enumerate(ForeignLabor.get_available_appointment_types()):
+                if "Verpflichtungserklärung" in termin:
+                    res.append((i, termin))
+            return res
+        except IndexError:
+            print('ERROR: cannot return typical appointments for KFZ (most probably the indexes have changed)')
+            return []
+
+    @staticmethod
+    def get_id():
+        """
+        :return: machine-readable unique ID of the buro
+        """
+        return 'abh'
 
 
 def write_response_to_log(txt):
@@ -288,7 +317,7 @@ def get_termins(buro, termin_type):
     # Session is required to keep cookies between requests
     s = requests.Session()
     # First request to get and save cookies
-    first_page = s.post(buro.get_frame_url())
+    first_page = s.get(buro.get_frame_url())
     try:
         token = re.search('FRM_CASETYPES_token" value="(.*?)"', first_page.text).group(1)
     except AttributeError:

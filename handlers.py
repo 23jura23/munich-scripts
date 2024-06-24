@@ -1,5 +1,4 @@
 import datetime
-import sys
 
 from telegram import Update
 
@@ -13,7 +12,8 @@ from states import MAIN, SELECTING_TERMIN_TYPE, QUERING_TERMINS, SELECT_DEADLINE
 
 def remove_subscription_helper(update: Update, context):
     chat_id = str(update.effective_chat.id)
-    job_storage.remove_subscription(chat_id)
+    stop, md5_ = update.callback_query.data.split('|||')
+    job_storage.remove_subscription(chat_id, md5_)
 
     return main_helper(update, context)
 
@@ -33,7 +33,7 @@ def main_handler(update: Update, context):
         if update.callback_query.data == '_REUSE':
             # All data already stored in user_data and user asked to repeat
             return query_termins_helper(update, context)
-        elif update.callback_query.data == '_STOP':
+        elif update.callback_query.data.split('|||')[0] == '_STOP':
             return remove_subscription_helper(update, context)
         else:
             # All options out, but data is here - it's the name of the department
@@ -83,7 +83,7 @@ def quering_termins_handler(update: Update, context):
             print_deadline_message(update, context)
             return SELECT_DEADLINE
 
-        elif update.callback_query.data == '_STOP':
+        elif update.callback_query.data.split('|||')[0] == '_STOP':
             return remove_subscription_helper(update, context)
     else:
         return query_termins_helper(update, context)
@@ -134,13 +134,13 @@ def interval_handler(update: Update, context):
 
     chat_id = str(update.effective_chat.id)
 
-    subsciption_present = job_storage.get_job(chat_id)
-
-    # User cannot have two or more subscriptions
-    if subsciption_present:
-        msg.reply_text(
-            '⚠️ You had some subscription already. In order to activate the new check, I have removed the old one.')
-        job_storage.remove_subscription(chat_id)
+    # subsciption_present = job_storage.get_job(chat_id)
+    #
+    # # User cannot have two or more subscriptions
+    # if subsciption_present:
+    #     msg.reply_text(
+    #         '⚠️ You had some subscription already. In order to activate the new check, I have removed the old one.')
+    #     job_storage.remove_subscription(chat_id)
 
     job_storage.add_subscription(update, context, interval=int(minutes))
 

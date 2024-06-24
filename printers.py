@@ -21,21 +21,24 @@ def get_msg(update: Update) -> Message:
         return update.callback_query.message
 
 
-def print_subscription_status(update, context):
+def print_subscriptions_status(update, context):
     msg = get_msg(update)
 
     chat_id = str(update.effective_chat.id)
-    subscription = job_storage.get_job(chat_id)
+    subscriptions = job_storage.get_jobs_prec(chat_id)
 
-    if subscription:
-        subscription_limit = subscription.kwargs['created_at'] + datetime.timedelta(days=7)
-        subscription_limit_date_time = subscription_limit.strftime("%d-%m-%Y %H:%M:%S")
-        deadline = subscription.kwargs['deadline'].strftime("%d-%m-%Y") if 'deadline' in subscription.kwargs else '-'
+    if len(subscriptions) > 0:
+        for subscription in subscriptions:
+            subscription_limit = subscription.kwargs['created_at'] + datetime.timedelta(days=7)
+            subscription_limit_date_time = subscription_limit.strftime("%d-%m-%Y %H:%M:%S")
+            deadline = subscription.kwargs['deadline'].strftime(
+                "%d-%m-%Y") if 'deadline' in subscription.kwargs else '-'
 
-        department = Buro.get_buro_by_id(subscription.kwargs['buro'])
-        msg.reply_text(
-            f'Current subscription details:\n\n - Department: {department.get_name()} \n - Type: {subscription.kwargs["termin"]} \n - Interval: {subscription.trigger.interval} \n - Until: {subscription_limit_date_time} \n - Not later than: {deadline} \n')
-        print_unsubscribe_button(chat_id)
+            department = Buro.get_buro_by_id(subscription.kwargs['buro'])
+            msg.reply_text(
+                f'Current subscription details:\n\n - Department: {department.get_name()} \n - Type: {subscription.kwargs["termin"]} \n - Interval: {subscription.trigger.interval} \n - Until: {subscription_limit_date_time} \n - Not later than: {deadline} \n')
+            print_unsubscribe_button(chat_id, Buro.get_buro_by_id(subscription.kwargs["buro"]).get_name(),
+                                     subscription.kwargs["termin"])
 
 
 def notify_about_termins(chat_id, buro, termin, created_at, deadline=None):
@@ -60,7 +63,8 @@ def notify_about_termins(chat_id, buro, termin, created_at, deadline=None):
                               'In the meantime, we\'ve removed this subscription in order to prevent sending '
                               'more of such useless messages :( Please come back later'
                          )
-        job_storage.remove_subscription(chat_id)
+        job_storage.remove_subscription(chat_id,
+                                        job_storage.get_md5(job_storage.get_md5(department.get_name(), termin)))
 
     if deadline is not None:
         appointments = [(caption, date, time) for caption, date, time in appointments if
@@ -72,15 +76,16 @@ def notify_about_termins(chat_id, buro, termin, created_at, deadline=None):
                              text=f'The nearest appointments at {caption} are on {date}:\n'
                                   '%s' % '\n'.join(time))
         bot.send_message(chat_id=chat_id, text=f'Please book your appointment here: {department.get_frame_url()}')
-        print_unsubscribe_button(chat_id)
+        print_unsubscribe_button(chat_id, buro, termin)
 
 
 def print_subscription_status_for_termin(update, context):
     msg = get_msg(update)
 
     chat_id = str(update.effective_chat.id)
+    buro = context.user_data['buro']
     termin = context.user_data['termin_type']
-    subscription = job_storage.get_job(chat_id)
+    subscription = job_storage.get_job(chat_id, buro, termin)
 
     if subscription and subscription.kwargs['termin'] == termin:
         subscription_limit = subscription.kwargs['created_at'] + datetime.timedelta(days=7)
@@ -88,7 +93,7 @@ def print_subscription_status_for_termin(update, context):
 
         msg.reply_text(
             f'Subscription with interval {subscription.trigger.interval}m is already active until {date_object} \n')
-        print_unsubscribe_button(chat_id)
+        print_unsubscribe_button(chat_id, buro, termin)
     else:
         buttons = [InlineKeyboardButton(text="Subscribe", callback_data="subscribe")]
         custom_keyboard = [buttons]
@@ -121,7 +126,7 @@ def print_main_message(update, context):
         'Here are available departments\. Please select one:',
         reply_markup=InlineKeyboardMarkup(custom_keyboard, one_time_keyboard=True), parse_mode='MarkdownV2')
 
-    print_subscription_status(update, context)
+    print_subscriptions_status(update, context)
 
 
 def print_stat_message(update, context):
@@ -222,8 +227,8 @@ def print_available_termins(update, context, print_if_none=False):
         print_subscription_status_for_termin(update, context)
 
 
-def print_unsubscribe_button(chat_id):
-    buttons = [InlineKeyboardButton(text="Unsubscribe", callback_data="_STOP")]
+def print_unsubscribe_button(chat_id, buro, termin):
+    buttons = [InlineKeyboardButton(text="Unsubscribe", callback_data=f"_STOP|||{job_storage.get_md5(buro, termin)}")]
     custom_keyboard = [buttons]
     utils.get_bot().send_message(chat_id,
                                  'To unsubscribe click the button',
