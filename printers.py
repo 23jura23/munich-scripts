@@ -64,7 +64,7 @@ def notify_about_termins(chat_id, buro, termin, created_at, deadline=None):
                               'more of such useless messages :( Please come back later'
                          )
         job_storage.remove_subscription(chat_id,
-                                        job_storage.get_md5(job_storage.get_md5(department.get_name(), termin)))
+                                        job_storage.get_md5(department.get_name(), termin))
 
     if deadline is not None:
         appointments = [(caption, date, time) for caption, date, time in appointments if

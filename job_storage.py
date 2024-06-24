@@ -24,8 +24,8 @@ def clear_jobs():
     for job in scheduler.get_jobs():
         if 'created_at' in job.kwargs and (datetime.datetime.now() - job.kwargs['created_at']).days >= 30:
             logger.info(f"Removing job {job.kwargs['chat_id']}", extra={'user': job.kwargs['chat_id']})
-            remove_subscription(job.kwargs['chat_id'], Buro.get_buro_by_id(job.kwargs['buro']).get_name(),
-                                job.kwargs['termin'], automatic=True)
+            remove_subscription(job.kwargs['chat_id'], get_md5(Buro.get_buro_by_id(job.kwargs['buro']).get_name(),
+                                job.kwargs['termin']), automatic=True)
 
 
 def init_scheduler():
