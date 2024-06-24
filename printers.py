@@ -57,14 +57,16 @@ def notify_about_termins(chat_id, buro, termin, created_at, deadline=None):
 
     if appointments is None:
         bot.send_message(chat_id=chat_id,
-                         text=f'Seems like appointment title <{termin}> is not accepted by the buro <{department.get_name()}> any more\n'
-                              'Please check of issues on Github and create one if not reported yet '
-                              '(https://github.com/okainov/munich-scripts/issues/new)\n'
-                              'In the meantime, we\'ve removed this subscription in order to prevent sending '
-                              'more of such useless messages :( Please come back later'
-                         )
-        job_storage.remove_subscription(chat_id,
-                                        job_storage.get_md5(department.get_name(), termin))
+                         text=f"Either appointment title <{termin}> at <{department.get_name()}> got broken, or some bug in my code happened")
+        # bot.send_message(chat_id=chat_id,
+        #                  text=f'Seems like appointment title <{termin}> is not accepted by the buro <{department.get_name()}> any more\n'
+        #                       'Please check of issues on Github and create one if not reported yet '
+        #                       '(https://github.com/okainov/munich-scripts/issues/new)\n'
+        #                       'In the meantime, we\'ve removed this subscription in order to prevent sending '
+        #                       'more of such useless messages :( Please come back later'
+        #                  )
+        # job_storage.remove_subscription(chat_id,
+        #                                 job_storage.get_md5(department.get_name(), termin))
 
     if deadline is not None:
         appointments = [(caption, date, time) for caption, date, time in appointments if
