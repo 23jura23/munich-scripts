@@ -7,4 +7,4 @@ PYESHandler==1.0.2
 
 
 # Dependencies for Telegram bot
-python-telegram-bot==12.8
+python-telegram-bot==21.3
